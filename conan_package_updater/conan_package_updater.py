@@ -101,16 +101,14 @@ class PackageUpdater(object):
                 content = repo.get_contents("conanfile.py")
                 self._notify_info(f"Found Conan repository: {repo.name}")
 
+                latest_package = self._get_latest_package(repo)
+                if not latest_package:
+                    continue
                 homepage = self._get_homepage(repo, content)
                 if not homepage:
                     continue
-
                 latest_release = self._get_latest_release(repo, homepage)
                 if not latest_release:
-                    continue
-
-                latest_package = self._get_latest_package(repo)
-                if not latest_package:
                     continue
 
                 if packaging.version.parse(latest_release) > packaging.version.parse(latest_package):
@@ -126,6 +124,11 @@ class PackageUpdater(object):
         return conan_repos
 
     def _get_homepage(self, repository, content):
+        """ Inspect Conan recipe for its homepage attribute. Only Github url are acceptable
+        :param repository: Github Repository instance
+        :param content: Github FileContent instance
+        :return: Homepage address if valid. Otherwise, None
+        """
         self._notify_info(f"Get the homepage from {repository.name}")
         with tempfile.NamedTemporaryFile(prefix="conan", suffix=".py") as file:
             file.write(content.decoded_content)

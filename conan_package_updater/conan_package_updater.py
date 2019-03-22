@@ -5,17 +5,14 @@ import argparse
 import sys
 import colorama
 import termcolor
-import tempfile
 import re
 import packaging
 from github import Github
 from github.GithubException import GithubException
-from conans.client import conan_api
-from conans.errors import ConanException
 
 __author__  = "Uilian Ries"
 __license__ = "MIT"
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 
 class PackageUpdater(object):
@@ -28,7 +25,6 @@ class PackageUpdater(object):
         self._arguments = None
         self._organization = None
         self._github = None
-        self._conan_instance, _, _ = conan_api.Conan.factory()
         self._updated_repos = {}
         colorama.init()
 
@@ -130,25 +126,18 @@ class PackageUpdater(object):
         :return: Homepage address if valid. Otherwise, None
         """
         self._notify_info(f"Get the homepage from {repository.name}")
-        with tempfile.NamedTemporaryFile(prefix="conan", suffix=".py") as file:
-            file.write(content.decoded_content)
-            file.flush()
-            try:
-                attributes = self._conan_instance.inspect(file.name, ["homepage"])
-                homepage = attributes['homepage']
-                if homepage:
-                    if "github.com" in homepage:
-                        self._notify_info(f"{repository.name} homepage: {homepage}")
-                    else:
-                        self._notify_warn(f"{repository.name} homepage: {homepage} is not a GitHub repository")
-                        homepage = None
-                else:
-                    self._notify_warn("Could not find 'homepage' in {}".format(repository.name))
-                return homepage
-            except ConanException as error:
-                self._notify_error(error)
-            except ImportError as error:
-                self._notify_error(error.message)
+        conanfile = content.decoded_content.decode('utf-8')
+        homepage = re.search("""homepage = ['"](.*)['"]""", conanfile)
+        if homepage:
+            homepage = homepage.group(1)
+            if "github.com" in homepage:
+                self._notify_info(f"{repository.name} homepage: {homepage}")
+            else:
+                self._notify_warn(f"{repository.name} homepage: {homepage} is not a GitHub repository")
+                homepage = None
+        else:
+            self._notify_warn("Could not find 'homepage' in {}".format(repository.name))
+        return homepage
 
     def _get_latest_release(self, repository, homepage):
         author_repo = self._github.get_repo(homepage[homepage.find("com/")+4:])

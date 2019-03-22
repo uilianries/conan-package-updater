@@ -132,7 +132,7 @@ class PackageUpdater(object):
         """
         self._notify_info(f"Get the homepage from {repository.name}")
         conanfile = content.decoded_content.decode('utf-8')
-        homepage = re.search("""homepage = ['"](.*)['"]""", conanfile)
+        homepage = re.search('''homepage\s*=\s*["'](\S*)["']''', conanfile)
         if homepage:
             homepage = homepage.group(1)
             if "github.com" in homepage:

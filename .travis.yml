@@ -11,4 +11,4 @@ install:
   - pip install .
 
 script:
-  - conan-package-updater bincrafters ${GITHUB_TOKEN} --ignore --dry-run --ignore-pattern="conan-boost*"
+  - conan-package-updater bincrafters ${GITHUB_TOKEN} --ignore --ignore-pattern="conan-boost*"

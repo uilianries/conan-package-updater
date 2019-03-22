@@ -6,7 +6,7 @@ import sys
 import colorama
 import termcolor
 import re
-import packaging
+from packaging import version
 from github import Github
 from github.GithubException import GithubException
 
@@ -107,7 +107,7 @@ class PackageUpdater(object):
                 if not latest_release:
                     continue
 
-                if packaging.version.parse(latest_release) > packaging.version.parse(latest_package):
+                if version.parse(latest_release) > version.parse(latest_package):
                     self._update_repo(repo, latest_package, latest_release)
                 else:
                     self._notify_info(f"{repo.name} is up-to-date.")
@@ -171,7 +171,7 @@ class PackageUpdater(object):
         if branches:
             latest_package = branches[0]
             for branch in branches:
-                if packaging.version.parse(latest_package) < packaging.version.parse(branch):
+                if version.parse(latest_package) < version.parse(branch):
                     latest_package = branch
             self._notify_info(f"{repository.name} latest package: {latest_package}")
         else:
@@ -200,8 +200,8 @@ class PackageUpdater(object):
     def _show_result(self):
         if self._updated_repos:
             updated_repos_output = ""
-            for repo, version in self._updated_repos.items():
-                updated_repos_output += repo + ": " + version + '\n'
+            for repo, ver in self._updated_repos.items():
+                updated_repos_output += repo + ": " + ver + '\n'
             self._notify_info(f"=== UPDATED REPOSITORIES ===\n{updated_repos_output}")
         else:
             self._notify_info(f"=== NO UPDATED REPOSITORIES ===")

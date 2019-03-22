@@ -12,7 +12,7 @@ from github.GithubException import GithubException
 
 __author__  = "Uilian Ries"
 __license__ = "MIT"
-__version__ = '0.1.3'
+__version__ = '0.2.0'
 
 
 class PackageUpdater(object):
@@ -40,6 +40,7 @@ class PackageUpdater(object):
         parser.add_argument('--ignore', '-i', action='store_true', help='Ignore errors receive from remote')
         parser.add_argument('--dry-run', '-d', action='store_true', help='Check which packages will be removed only')
         parser.add_argument('--version', '-v', action='version', version='%(prog)s {}'.format(__version__))
+        parser.add_argument('--ignore-pattern', '-p', type=str, help='Project pattern name to be ignored e.g. conan-boost*')
         args = parser.parse_args(*args)
         return args
 
@@ -86,12 +87,16 @@ class PackageUpdater(object):
         :return: List with all Conan projects
         """
         conan_repos = []
+        regex = re.compile(self._arguments.ignore_pattern.replace('*', '.*')) if self._arguments.ignore_pattern else None
         self._notify_info(f"The organization {self._organization.name} contains {self._organization.public_repos} repositories.")
         for repo in self._organization.get_repos():
             try:
                 if not repo.name.startswith("conan-"):
                     continue
                 if repo.archived:
+                    continue
+
+                if regex and regex.match(repo.name):
                     continue
 
                 content = repo.get_contents("conanfile.py")

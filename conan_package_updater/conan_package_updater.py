@@ -12,7 +12,7 @@ from github.GithubException import GithubException
 
 __author__  = "Uilian Ries"
 __license__ = "MIT"
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 
 class PackageUpdater(object):
@@ -156,7 +156,8 @@ class PackageUpdater(object):
                 last = tags[-1].name[re.search(r'\d', tags[-1].name).start():] if re.search(r'\d', tags[-1].name) else ""
                 latest_release = first if first > last else last
         else:
-            latest_release = releases[0].tag_name
+            if not releases[0].prerelease and not releases[0].draft:
+                latest_release = releases[0].tag_name
 
         if latest_release:
             latest_release = latest_release[re.search(r'\d', latest_release).start():]

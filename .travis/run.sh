@@ -11,17 +11,10 @@ if [[ "$(uname -s)" == 'Darwin' ]]; then
 fi
 
 if [[ "${TRAVIS_EVENT_TYPE}" != "cron" ]]; then
-    python setup.py sdist
-    pushd tests
-    pytest -v -s --cov=conan_package_updater.conan_package_updater
-    mv .coverage ..
-    popd
-
     python setup.py install
-    conan-package-updater --version
+    conan-package-updater bincrafters ${GITHUB_TOKEN} --ignore --dry-run
 else
 
     python setup.py install
-
-    conan-package-updater bincrafters ${GITHUB_TOKEN} --ignore
+    conan-package-updater bincrafters ${GITHUB_TOKEN} --ignore --dry-run
 fi

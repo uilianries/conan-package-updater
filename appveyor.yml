@@ -15,10 +15,8 @@ environment:
 
 install:
   - set PATH=%PATH%;%PYTHON%/Scripts/
-  - pip.exe install -e .[test]
+  - pip.exe install .
 
 test_script:
-- cd tests
-- pytest -v --cov=bincrafters_package_updater
-- cd ..
+- conan-package-updater bincrafters ${GITHUB_TOKEN} --ignore --dry-run
 - python setup.py install

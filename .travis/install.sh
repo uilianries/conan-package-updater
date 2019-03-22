@@ -18,5 +18,4 @@ if [[ "$(uname -s)" == 'Darwin' ]]; then
     pyenv activate conan
 fi
 
-pip install codecov
-pip install -e .[test]
+pip install .

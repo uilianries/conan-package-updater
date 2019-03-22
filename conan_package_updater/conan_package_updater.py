@@ -15,7 +15,7 @@ from conans.errors import ConanException
 
 __author__  = "Uilian Ries"
 __license__ = "MIT"
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 
 class PackageUpdater(object):
@@ -41,7 +41,6 @@ class PackageUpdater(object):
         parser.add_argument('organization', type=str, help='Github organization name e.g. bincrafters')
         parser.add_argument('token', type=str, help='Github Token used to create new branches')
         parser.add_argument('--user', '-u', action='store_true', help='Organization is an user account')
-        parser.add_argument('--yes', '-y', action='store_true', help='Do not ask for confirmation')
         parser.add_argument('--ignore', '-i', action='store_true', help='Ignore errors receive from remote')
         parser.add_argument('--dry-run', '-d', action='store_true', help='Check which packages will be removed only')
         parser.add_argument('--version', '-v', action='version', version='%(prog)s {}'.format(__version__))
@@ -216,18 +215,16 @@ class PackageUpdater(object):
             self._notify_info(f"=== NO UPDATED REPOSITORIES ===")
 
 
-def main(args):
+def main():
     """ Execute package updater
-
-    :param args: User arguments
     """
     try:
         updater = PackageUpdater()
-        updater.run(args)
+        updater.run(sys.argv[1:])
     except Exception as error:
         print(termcolor.colored("ERROR: {}".format(error), 'red'))
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

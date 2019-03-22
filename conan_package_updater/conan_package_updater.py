@@ -15,7 +15,7 @@ from conans.errors import ConanException
 
 __author__  = "Uilian Ries"
 __license__ = "MIT"
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 
 class PackageUpdater(object):
@@ -72,28 +72,8 @@ class PackageUpdater(object):
         """
         self._arguments = self._parse_arguments(*args)
         self._login()
-        conan_repos = self._list_conan_repositories()
-        for repo in conan_repos:
-            homepage = self._get_homepage(repo)
-            if not homepage:
-                continue
-            latest_release = self._get_latest_release(repo, homepage)
-            if not latest_release:
-                continue
-            latest_package = self._get_latest_package(repo)
-            if not latest_package:
-                continue
-
-            if packaging.version.parse(latest_release) > packaging.version.parse(latest_package):
-                self._update_repo(repo, latest_package, latest_release)
-            else:
-                self._notify_info(f"{repo.name} is up-to-date.")
-
-        if self._updated_repos:
-            updated_repos_output = ""
-            for repo, version in self._updated_repos.items():
-                updated_repos_output += repo + ": " + version + '\n'
-            self._notify_info(f"=== UPDATED REPOSITORIES ===\n{updated_repos_output}")
+        self._process_conan_repositories()
+        self._show_result()
 
     def _login(self):
         """ Execute Github login
@@ -106,7 +86,7 @@ class PackageUpdater(object):
             self._organization = self._github.get_organization(self._arguments.organization)
         self._notify_info(f"Logged in the organization '{self._organization.name}'")
 
-    def _list_conan_repositories(self):
+    def _process_conan_repositories(self):
         """List all Conan repositories from Github
         :return: List with all Conan projects
         """
@@ -118,9 +98,27 @@ class PackageUpdater(object):
                     continue
                 if repo.archived:
                     continue
-                repo.get_contents("conanfile.py")
-                conan_repos.append(repo)
+
+                content = repo.get_contents("conanfile.py")
                 self._notify_info(f"Found Conan repository: {repo.name}")
+
+                homepage = self._get_homepage(repo, content)
+                if not homepage:
+                    continue
+
+                latest_release = self._get_latest_release(repo, homepage)
+                if not latest_release:
+                    continue
+
+                latest_package = self._get_latest_package(repo)
+                if not latest_package:
+                    continue
+
+                if packaging.version.parse(latest_release) > packaging.version.parse(latest_package):
+                    self._update_repo(repo, latest_package, latest_release)
+                else:
+                    self._notify_info(f"{repo.name} is up-to-date.")
+
             except GithubException as error:
                 if error.status == 404:
                     pass
@@ -128,10 +126,10 @@ class PackageUpdater(object):
                     self._notify_error(error)
         return conan_repos
 
-    def _get_homepage(self, repository):
-        conanfile = repository.get_contents("conanfile.py")
+    def _get_homepage(self, repository, content):
+        self._notify_info(f"Get the homepage from {repository.name}")
         with tempfile.NamedTemporaryFile(prefix="conan", suffix=".py") as file:
-            file.write(conanfile.decoded_content)
+            file.write(content.decoded_content)
             file.flush()
             try:
                 attributes = self._conan_instance.inspect(file.name, ["homepage"])
@@ -197,6 +195,7 @@ class PackageUpdater(object):
 
         if self._arguments.dry_run:
             self._notify_info(f"{repo.name}: Commit new file (dry-run)")
+            self._updated_repos[repo.name] = latest_release
             return
 
         repo.create_git_ref(f"refs/heads/{branch}", first_commit.sha)
@@ -206,6 +205,15 @@ class PackageUpdater(object):
         self._notify_info(f"{repo.name}: Commit new file")
         repo.update_file(new_conanfile.path, message=f"Bump version to {latest_release}", content=content, sha=new_conanfile.sha, branch=branch)
         self._updated_repos[repo.name] = latest_release
+
+    def _show_result(self):
+        if self._updated_repos:
+            updated_repos_output = ""
+            for repo, version in self._updated_repos.items():
+                updated_repos_output += repo + ": " + version + '\n'
+            self._notify_info(f"=== UPDATED REPOSITORIES ===\n{updated_repos_output}")
+        else:
+            self._notify_info(f"=== NO UPDATED REPOSITORIES ===")
 
 
 def main(args):
